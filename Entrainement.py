@@ -24,4 +24,8 @@ Y = [
     [[2, -1], [2, 1]]
 ]
 
+<<<<<<< HEAD
 assert len(X) == len(Y)
+=======
+assert len(X) == len(Y)
+>>>>>>> 27ddb81ac20531a4bb5ab143554fc753289e1b6b
