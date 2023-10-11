@@ -2,7 +2,7 @@
 RNN jeu de hex
 
 A faire : 
-<span style="color: #26B260"> - finir le jeu de données </span>
+- finir le jeu de données 
 - 1 les extrémités a joindre 2 l'ia 0 le vide et -1 l'adversaire
 - adapter le réseau de neurones au donné
 - faire la fonction de traduction en donné pour l'ia
