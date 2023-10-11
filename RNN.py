@@ -14,8 +14,8 @@ def gen_batch(inputs, targets):
     num_batches = len(inputs) 
     
     for i in range(num_batches):
-        batch_inputs = inputs[i: (i+1)]
-        batch_targets = targets[i : (i+1)]
+        batch_inputs = np.array(inputs[i: (i+1)]).flatten()
+        batch_targets = np.array(targets[i : (i+1)]).flatten()
         
         yield batch_inputs, batch_targets
 
@@ -34,13 +34,13 @@ class OneHot(tf.keras.layers.Layer) :
     
 
 tf_inputs = tf.keras.Input(shape=(None,), batch_size=64)
-one_hot = OneHot(len(vocab))(tf_inputs)
+one_hot = OneHot(4)(tf_inputs)
 
 rnn_layer1 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(one_hot)
 rnn_layer2 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(rnn_layer1)
 hidden_layer = tf.keras.layers.Dense(128, activation="relu")(rnn_layer2)
 
-out = tf.keras.layers.Dense(vocab_size, activation="softmax")(hidden_layer)
+out = tf.keras.layers.Dense(2, activation="softmax")(hidden_layer)
 
 model = tf.keras.Model(inputs=tf_inputs, outputs=out)
 
@@ -66,16 +66,16 @@ def predict(inputs):
 
 model.reset_states()
 
-for i in range(1000):
-    for elt in range(len(inputs)) :
-        for batch_inputs, batch_targets in gen_batch(inputs, targets):
-            train_step(batch_inputs, batch_targets)
-        template = '\r Iteration {}, Train Loss: {}, Train Accuracy: {}'
-        print(template.format(i, train_loss.result(), train_accuracy.result()*100), end="")
-        model.reset_states()
+for i in range(100):
+    for batch_inputs, batch_targets in gen_batch(inputs, targets):
+        batch_inputs_flattened = np.array(batch_inputs)
+        train_step(batch_inputs_flattened, batch_targets)
+    template = '\r Iteration {}, Train Loss: {}, Train Accuracy: {}'
+    print(template.format(i, train_loss.result(), train_accuracy.result()*100), end="")
+    model.reset_states()
 
-import json
 model.save("model_rnn.h5")
+
 
 
 
