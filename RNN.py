@@ -78,7 +78,6 @@ for i in range(100):
 
 model.save("model_rnn.h5")
 
-# 😊
 
 
 
