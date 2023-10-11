@@ -9,38 +9,34 @@ game_data_X,game_data_Y = X,Y
 
 inputs,targets = game_data_X,game_data_Y
 
-def gen_batch(inputs, targets):
+def gen_batch(inputs, targets, batch_size=32):
     assert len(inputs) == len(targets)
-    num_batches = len(inputs) 
+    num_batches = len(inputs) // batch_size
     
     for i in range(num_batches):
-        batch_inputs = np.array(inputs[i: (i+1)]).flatten()
-        batch_targets = np.array(targets[i : (i+1)]).flatten()
+        batch_inputs = np.array(inputs[i*batch_size: (i+1)*batch_size])
+        batch_targets = np.array(targets[i*batch_size: (i+1)*batch_size])
         
         yield batch_inputs, batch_targets
 
-#for elt in range(len(inputs)) :
-#    for batch_inputs, batch_targets in gen_batch(inputs[elt], targets[elt]):
-#        print(batch_inputs[0], batch_targets[0])
 
-#Reseau de neurones 
+#Reseau de neurones
 class OneHot(tf.keras.layers.Layer) :
     def __init__(self, depth, **kwargs):
         super(OneHot, self).__init__(**kwargs)
         self.depth = depth
     
     def call(self, x, mask=None):
-        return tf.one_hot(tf.cast(x, tf.int64), self.depth)
-    
+        return tf.one_hot(tf.cast(x, tf.int32), self.depth)
 
-tf_inputs = tf.keras.Input(shape=(None,), batch_size=64)
-one_hot = OneHot(4)(tf_inputs)
+tf_inputs = tf.keras.Input(shape=(None, ), batch_size=64)
+one_hot = OneHot(2)(tf_inputs)
 
 rnn_layer1 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(one_hot)
 rnn_layer2 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(rnn_layer1)
 hidden_layer = tf.keras.layers.Dense(128, activation="relu")(rnn_layer2)
 
-out = tf.keras.layers.Dense(2, activation="softmax")(hidden_layer)
+out = tf.keras.layers.Dense(2, activation="softmax", )(hidden_layer)
 
 model = tf.keras.Model(inputs=tf_inputs, outputs=out)
 
@@ -60,23 +56,29 @@ def train_step(inputs, targets):
     train_accuracy(targets, predictions)
 
 @tf.function
-def predict(inputs):
-    predictions = model(inputs)
+def predict(inputs_x):
+    predictions = model(inputs_x)
     return predictions
 
 model.reset_states()
-
-# Ici, j'ai modifié la boucle d'entraînement pour aplatir les entrées avant de les passer à train_step
-for i in range(100):
+"""
+for epoch in range(4000):
     for batch_inputs, batch_targets in gen_batch(inputs, targets):
-            # Aplatir les entrées avant de les passer à train_step
-        batch_inputs_flattened = np.array(batch_inputs).flatten()
-        train_step(batch_inputs_flattened, batch_targets)
-    template = '\r Iteration {}, Train Loss: {}, Train Accuracy: {}'
-    print(template.format(i, train_loss.result(), train_accuracy.result()*100), end="")
+        train_step(batch_inputs, batch_targets)
+    template = '\r Epoch {}, Train Loss: {}, Train Accuracy: {}'
+    print(template.format(epoch, train_loss.result(), train_accuracy.result()*100), end="")
     model.reset_states()
 
-model.save("model_rnn.h5")
+model.save('my_model.keras')
+"""
+model.load_weights('my_model.keras')
+example = np.array([[1,1],[1,1]])
+example_batch = np.expand_dims(example, axis=0)
+prediction = model.predict(example_batch)
+
+print(prediction)
+
+
 
 
 
