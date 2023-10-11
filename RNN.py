@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import ast
 
+#traitemrnt des données 
 with open('Entrainement.txt', 'r') as f:
     data = f.read()
 
@@ -25,7 +26,59 @@ def gen_batch(inputs, targets):
 #    for batch_inputs, batch_targets in gen_batch(inputs[elt], targets[elt]):
 #        print(batch_inputs[0], batch_targets[0])
 
+#Reseau de neurones 
+class OneHot(tf.keras.layers.Layer) :
+    def __init__(self, depth, **kwargs):
+        super(OneHot, self).__init__(**kwargs)
+        self.depth = depth
+    
+    def call(self, x, mask=None):
+        return tf.one_hot(tf.cast(x, tf.int64), self.depth)
+    
 
+tf_inputs = tf.keras.Input(shape=(None,), batch_size=64)
+one_hot = OneHot(len(vocab))(tf_inputs)
+
+rnn_layer1 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(one_hot)
+rnn_layer2 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(rnn_layer1)
+hidden_layer = tf.keras.layers.Dense(128, activation="relu")(rnn_layer2)
+
+out = tf.keras.layers.Dense(vocab_size, activation="softmax")(hidden_layer)
+
+model = tf.keras.Model(inputs=tf_inputs, outputs=out)
+
+loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
+optimizer = tf.keras.optimizers.Adam()
+train_loss = tf.keras.metrics.Mean(name='train_loss')
+train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
+
+@tf.function
+def train_step(inputs, targets):
+    with tf.GradientTape() as tape:
+        predictions = model(inputs)
+        loss = loss_object(targets, predictions)
+    gradients = tape.gradient(loss, model.trainable_variables)
+    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    train_loss(loss)
+    train_accuracy(targets, predictions)
+
+@tf.function
+def predict(inputs):
+    predictions = model(inputs)
+    return predictions
+
+model.reset_states()
+
+for i in range(1000):
+    for elt in range(len(inputs)) :
+        for batch_inputs, batch_targets in gen_batch(inputs, targets):
+            train_step(batch_inputs, batch_targets)
+        template = '\r Iteration {}, Train Loss: {}, Train Accuracy: {}'
+        print(template.format(i, train_loss.result(), train_accuracy.result()*100), end="")
+        model.reset_states()
+
+import json
+model.save("model_rnn.h5")
 
 
 
