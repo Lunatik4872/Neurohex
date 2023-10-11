@@ -9,3 +9,4 @@ A faire :
 - modifier le jeu pour y ajouter l'ia
 - entraînement sur les donnés supervisé
 - jeu avec apprentissage par renforcement a chaque partie (perpétuel évolution vérifié que les gradients fasse pas de conneries)
+- rajouter du bruit (si possible) a la fragmentation des données fonction gen_batch
