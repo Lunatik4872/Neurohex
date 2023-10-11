@@ -1,13 +1,10 @@
 import tensorflow as tf
 import numpy as np
-import ast
+from Entrainement import *
 
-#traitemrnt des données 
-with open('Entrainement.txt', 'r') as f:
-    data = f.read()
+#traitement des données 
 
-data = ast.literal_eval(data)
-game_data_X,game_data_Y = data[0],data[1]
+game_data_X,game_data_Y = X,Y
 #print("X =",game_data_X,"\n\n","Y =",game_data_Y)
 
 inputs,targets = game_data_X,game_data_Y
