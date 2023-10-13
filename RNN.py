@@ -30,7 +30,7 @@ class OneHot(tf.keras.layers.Layer) :
         return tf.one_hot(tf.cast(x, tf.int32), self.depth)
 
 tf_inputs = tf.keras.Input(shape=(None, ), batch_size=64)
-one_hot = OneHot(2)(tf_inputs)
+one_hot = OneHot(1)(tf_inputs)
 
 rnn_layer1 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(one_hot)
 rnn_layer2 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(rnn_layer1)
