@@ -23,7 +23,7 @@ rnn_layer1 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(one_
 rnn_layer2 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(rnn_layer1)
 hidden_layer = tf.keras.layers.Dense(128, activation="relu")(rnn_layer2)
 
-out = tf.keras.layers.Dense(2,activation="softmax")(hidden_layer)
+out = tf.keras.layers.Dense(2,activation="softmax")(hidden_layer)#possible 4 au lieu de 2
 
 model = tf.keras.Model(inputs=tf_inputs, outputs=out)
 
