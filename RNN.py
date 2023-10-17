@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 from Entrainement import *
 
-game_data_X,game_data_Y = np.array(X),np.array(Y)
+game_data_X,game_data_Y = tf.convert_to_tensor(X),tf.convert_to_tensor(Y)
 inputs,targets = game_data_X,game_data_Y
 
 #Reseau de neurones
@@ -12,18 +12,18 @@ class OneHot(tf.keras.layers.Layer) :
         self.depth = depth
 
     def call(self, x, mask=None):
-        x = tf.reshape(x, [-1]) # Reshape the input to be 1D
+        x = tf.reshape(x, (1,-1))
         one_hot = tf.one_hot(tf.cast(x, tf.int32), self.depth)
         return tf.reshape(one_hot, [-1, tf.shape(x)[-1], self.depth])
 
-tf_inputs = tf.keras.Input(batch_shape=(64, 2))
-one_hot = OneHot(20)(tf_inputs)
+tf_inputs = tf.keras.Input(batch_shape=(64,))
+one_hot = OneHot(4)(tf_inputs)
 
 rnn_layer1 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(one_hot)
 rnn_layer2 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(rnn_layer1)
 hidden_layer = tf.keras.layers.Dense(128, activation="relu")(rnn_layer2)
 
-out = tf.keras.layers.Dense(2, activation="softmax")(hidden_layer)
+out = tf.keras.layers.Dense(2,activation="softmax")(hidden_layer)
 
 model = tf.keras.Model(inputs=tf_inputs, outputs=out)
 
@@ -45,16 +45,14 @@ def train_step(inputs, targets):
 @tf.function
 def predict(inputs_x):
     predictions = model(inputs_x)
-    predictions = predictions[0]
+    max_indices = tf.argmax(predictions, axis=-1)[0] #possible qu'il faudra le sortir de la 
 
-    return predictions
+    return max_indices
 
 model.reset_states()
-"""
-for epoch in range(1000):
-    for batch_inputs, batch_targets in zip(inputs, targets):
 
-        batch_targets = tf.reshape(batch_targets, (1, -1))
+for epoch in range(4000):
+    for batch_inputs, batch_targets in zip(inputs, targets):
 
         train_step(batch_inputs, batch_targets)
 
@@ -62,11 +60,12 @@ for epoch in range(1000):
     print(template.format(epoch, train_loss.result(), train_accuracy.result()*100), end="")
     model.reset_states()
 
-model.save('my_model.keras')"""
+model.save('my_model.keras')
 
 model.load_weights('my_model.keras')
 
-board = np.array([[1,2], [-1,1]])
+board = tf.convert_to_tensor([[1,-1], [1,2]])
+
 next_move = predict(board)
-print(np.argmax(np.array(next_move)))
+
 print("Le prochain coup est :", next_move)
