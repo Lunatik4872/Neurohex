@@ -26,3 +26,5 @@ class Sommet:
         for i in range(len(self.listeVoisin)):
             if self.listeVoisin[i].couleur == couleur and self.listeVoisin[i].graphe != self.graphe:
                 self.listeVoisin[i].graphe.fusion(self.graphe)
+
+                
