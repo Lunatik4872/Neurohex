@@ -2,70 +2,89 @@ import tensorflow as tf
 import numpy as np
 from Entrainement import *
 
-game_data_X,game_data_Y = tf.convert_to_tensor(X),tf.convert_to_tensor(Y)
-inputs,targets = game_data_X,game_data_Y
-
 #Reseau de neurones
-class OneHot(tf.keras.layers.Layer) :
+class OneHot(tf.keras.layers.Layer):
+    #OneHot c'est l'encodage 1 parmi n consiste a encoder une variable a n états sur n bits dont un seul prend la valeur 1 (c'est question de proba)
     def __init__(self, depth, **kwargs):
         super(OneHot, self).__init__(**kwargs)
         self.depth = depth
 
-    def call(self, x, mask=None):
-        x = tf.reshape(x, (1,-1))
+    def call(self, x):
         one_hot = tf.one_hot(tf.cast(x, tf.int32), self.depth)
-        return tf.reshape(one_hot, [-1, tf.shape(x)[-1], self.depth])
+        return one_hot
 
-tf_inputs = tf.keras.Input(batch_shape=(64,))
-one_hot = OneHot(4)(tf_inputs)
+tf_inputs = tf.keras.Input(shape=(None,), batch_size=1) #Couche d'entré flexible qui prend n'importe quel taille de donné (J'ai pas fini la flexibilité)
 
-rnn_layer1 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(one_hot)
-rnn_layer2 = tf.keras.layers.GRU(128, return_sequences=True, stateful=True)(rnn_layer1)
-hidden_layer = tf.keras.layers.Dense(128, activation="relu")(rnn_layer2)
+#one_hot = OneHot(4)(tf_inputs) #Je sais pas encore c'est quoi le meilleur traitement entre le one hot et le embedding
+embedding = tf.keras.layers.Embedding(input_dim=4, output_dim=64)(tf_inputs) #Créer un vecteur de taille identique pour tous (Le 4 represente les 4 valeurs de sortie possible) 
 
-out = tf.keras.layers.Dense(2,activation="softmax")(hidden_layer)
+rnn_layer1 = tf.keras.layers.LSTM(128, return_sequences=True, stateful=True)(embedding) #Les diférentes couche du réseau RNN elles sont capable de mémoriser les états afin de jouer en fonction de ce qui c'est passé
+rnn_layer2 = tf.keras.layers.LSTM(128, return_sequences=True, stateful=True)(rnn_layer1) #Chaque nouvelle couche est relié à la précedente 
+hidden_layer = tf.keras.layers.Dense(128, activation="relu")(rnn_layer2) #Couche classique avec comme comme focntion la relu(x) = max(0,x)
+outputs = tf.keras.layers.Dense(4, activation="softmax")(hidden_layer) #sortie en proba softmax c'est comme la sigmoide mais en plus performant (Le 4 represente les 4 valeurs de sortie possible) 
 
-model = tf.keras.Model(inputs=tf_inputs, outputs=out)
+model = tf.keras.Model(inputs=tf_inputs, outputs=outputs)
 
+#C'est les composant qui optimise et entraine le réseau
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
-optimizer = tf.keras.optimizers.Adam()
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
 
 @tf.function
 def train_step(inputs, targets):
+    #La fonction d'entrainement utilisant la déscente de gradiant 
     with tf.GradientTape() as tape:
         predictions = model(inputs)
         loss = loss_object(targets, predictions)
+
     gradients = tape.gradient(loss, model.trainable_variables)
-    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    optimizer.apply_gradients(zip(gradients, model.trainable_variables)) #Mise à jour des poids du réseau avec optimisation
+
     train_loss(loss)
     train_accuracy(targets, predictions)
 
 @tf.function
 def predict(inputs_x):
+    #Fonction qui traite les entrée pour faire des probas des données lisibles 
+    inputs_x = tf.convert_to_tensor(jeu)
+    inputs_x = tf.reshape(inputs_x, (1,-1))
     predictions = model(inputs_x)
-    max_indices = tf.argmax(predictions, axis=-1)[0] #possible qu'il faudra le sortir de la 
 
-    return max_indices
+    res = []
+    for i in range(predictions[0].shape[0]) :
+        res.append(tf.argmax(predictions[0][i]))
+    
+    return tf.convert_to_tensor(res)
 
 model.reset_states()
 
-for epoch in range(4000):
-    for batch_inputs, batch_targets in zip(inputs, targets):
+def train() :
+    for i in range(len(X)) :
+        inputs,targets = X[i],Y[i]
 
-        train_step(batch_inputs, batch_targets)
+        for epoch in range(2000):
+            for batch_inputs, batch_targets in zip(inputs, targets):
+                #On converti les données en matrices tensor et on les aplati
+                train_step(tf.reshape(tf.convert_to_tensor(batch_inputs),(1,-1)), tf.reshape(tf.convert_to_tensor(batch_targets),(1,-1))) 
 
-    template = '\r Epoch {}, Train Loss: {}, Train Accuracy: {}'
-    print(template.format(epoch, train_loss.result(), train_accuracy.result()*100), end="")
-    model.reset_states()
+            template = '\r Dim {}, Epoch {}, Train Loss: {}, Train Accuracy: {}'
+            print(template.format(i+2, epoch+1,train_loss.result(),train_accuracy.result()*100), end="")
+            model.reset_states()
 
-model.save('my_model.keras')
+    model.save('my_model.keras')
 
-model.load_weights('my_model.keras')
+#train() #Pense à enlever le com pour entrainer le réseau 
 
-board = tf.convert_to_tensor([[1,-1], [1,2]])
+def IA_jouer(tab) :
+    #Un traitement suplémentaire pour les sortir de la forme tensor qui est pas jolie à voir et assez discrete 
+    jeu = predict(tab)
+    dim = int(jeu.shape[0]**0.5)
+    return np.reshape(jeu.numpy(),(dim,dim))
 
-next_move = predict(board)
+model.load_weights('my_model.keras') #C'est le fichier ou on stock le réseau RNN 
+jeu = [[2,1,1,2],[2,1,1,2],[2,1,1,2],[2,1,1,2]]
 
-print("Le prochain coup est :", next_move)
+next_move = IA_jouer(jeu)
+
+print("Le prochain coup est :\n",next_move)

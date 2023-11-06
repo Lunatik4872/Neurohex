@@ -1,32 +1,37 @@
-import numpy as np
+#fait pas gaffe à ce fichier il me permet de convertir des données redondantes 
+l = [
+        [[2,1,2],[2,1,2],[2,1,2]],
+        [[2,1,2],[2,1,2],[2,1,2]],
+        [[2,1,2],[2,1,2],[2,1,2]],
+        [[2,1,2],[2,1,2],[2,1,2]],
+        [[2,1,2],[2,1,2],[2,1,2]],
+        [[2,1,2],[2,1,2],[2,1,2]]
+    ]
 
-# Le tableau original
-original_arrays = [
-    [[1,2], [-1,1]],
-    [[-1,1], [1,2]],
-    [[2,-1], [1,1]],
-]
+l2 = [
+        [1,0,0,0,0,0,0,0,0],
+        [0,0,1,0,0,0,0,0,0],
+        [0,0,0,1,0,0,0,0,0],
+        [0,0,0,0,0,1,0,0,0],
+        [0,0,0,0,0,0,1,0,0],
+        [0,0,0,0,0,0,0,0,1]
+    ]
 
-# Nombre d'exemplaires que vous voulez créer pour chaque tableau
-num_copies = 10
 
-# Créer une liste pour stocker les copies
-copies = []
+for i in range(len(l)) :
+    pos = l2[i].index(max(l2[i]))
+    l[i][pos//3][pos%3] = 3
 
-for original_array in original_arrays:
-    for _ in range(num_copies):
-        # Créer une copie du tableau original
-        copy = np.copy(original_array)
-        # Mélanger la copie de manière aléatoire
-        np.random.shuffle(copy.ravel())
-        # Ajouter la copie à la liste des copies
-        copies.append(copy)
+import copy
 
-# Mélanger les copies
-np.random.shuffle(copies)
+test = [[2,1,1,2],[2,1,1,2],[2,1,1,2],[2,1,1,2]]
+res = []
 
-# Convertir la liste des copies en un tableau numpy 3D
-copies = np.array(copies)
+for i in range(16) :
+    if test[i//4][i%4] == 2:
+        temp = copy.deepcopy(test)
+        temp[i//4][i%4] = 3
+        res.append(temp)
 
-# Afficher le tableau des copies
-print(list(copies))
+for matrix in res:
+    print(str(matrix)+",")
