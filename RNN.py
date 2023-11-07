@@ -89,4 +89,8 @@ jeu = [[3,0,2],
 
 next_move = IA_jouer(jeu)
 
+<<<<<<< HEAD
 print("Le prochain coup est :\n",next_move)
+=======
+print("Le prochain coup est :\n",next_move)
+>>>>>>> af8acb75615db6917546036f31665a364c66a858
